@@ -82,7 +82,6 @@ static void BoxTask(snet_entity_t *ent, void *arg)
   while(!terminate) {
     /* read from input stream */
     rec = SNetStreamRead(instream);
-
     switch(SNetRecGetDescriptor(rec)) {
       case REC_trigger_initialiser:
       case REC_data:

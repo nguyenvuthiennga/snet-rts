@@ -1,10 +1,8 @@
-
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-
+#include "glue_snet.h"
 
 #include "debug.h"
 
@@ -81,11 +79,11 @@ static void *EntityTask(void *arg)
 int SNetThreadingInit(int argc, char **argv)
 {
 	lpel_config_t config;
-	char fname[20+1];
 	int i, res;
 	char *mon_elts = NULL;
 	memset(&config, 0, sizeof(lpel_config_t));
 
+	char fname[20+1];
 
 	config.flags = LPEL_FLAG_PINNED;
 
@@ -230,6 +228,32 @@ void SNetThreadingEventSignal(snet_entity_t *ent, snet_moninfo_t *moninfo)
 /*****************************************************************************
  * Spawn a new task
  ****************************************************************************/
+static void setTaskRecLimit(snet_entity_descr_t type, lpel_task_t *t){
+	int limit;
+	switch(type) {
+	case ENTITY_box:
+		limit = BOX_REC_LIMIT;
+		break;
+	case ENTITY_parallel:
+		limit = PARALLEL_REC_LIMIT;
+		break;
+	case ENTITY_star:
+		limit = STAR_REC_LIMIT;
+		break;
+	case ENTITY_split:
+		limit = SPLIT_REC_LIMIT;
+		break;
+	case ENTITY_filter:
+		limit = FILTER_REC_LIMIT;
+		break;
+	default:
+		limit = OTHER_REC_LIMIT;
+		break;
+	}
+	LpelTaskSetRecLimit(t, limit);
+}
+
+
 int SNetThreadingSpawn(snet_entity_t *ent)
 /*
   snet_entity_type_t type,
@@ -243,16 +267,10 @@ int SNetThreadingSpawn(snet_entity_t *ent)
 {
 	int worker = -1;
 	snet_entity_descr_t type = SNetEntityDescr(ent);
-	int location = SNetEntityNode(ent);
 	const char *name = SNetEntityName(ent);
 
 	if ( type != ENTITY_other) {
-		if (dloc_placement) {
-			assert(location != -1);
-			worker = location % num_workers;
-		} else {
-			worker = SNetAssignTask( (type==ENTITY_box), name );
-		}
+		worker = 0;
 	}
 
 	lpel_task_t *t = LpelTaskCreate(
@@ -263,6 +281,8 @@ int SNetThreadingSpawn(snet_entity_t *ent)
 			GetStacksize(type)
 	);
 
+	/** set limit number of records a task can process in once */
+	setTaskRecLimit(type, t);
 
 #ifdef USE_LOGGING
 	if (mon_flags & SNET_MON_TASK){
@@ -277,15 +297,15 @@ int SNetThreadingSpawn(snet_entity_t *ent)
 	if ((mon_flags & SNET_MON_MAP) && mapfile) {
 		int tid = LpelTaskGetID(t);
 		// FIXME: change to binary format
-		(void) fprintf(mapfile, "%d%s %d%c", tid, SNetEntityStr(ent), worker, END_LOG_ENTRY);
+		(void) fprintf(mapfile, "%d%s%c", tid, SNetEntityStr(ent), END_LOG_ENTRY);
 	}
 
 
 #endif
 
-	if (type != ENTITY_box && type != ENTITY_fbbuf) {
-		LpelTaskPrio(t, 1);
-	}
+//	if (type != ENTITY_box && type != ENTITY_fbbuf) {
+//		LpelTaskPrio(t, 1);
+//	}
 
 
 	//FIXME only for debugging purposes

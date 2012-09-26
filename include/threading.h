@@ -455,5 +455,4 @@ void SNetStreamIterAppend( snet_stream_iter_t *iter,
 void SNetStreamIterRemove( snet_stream_iter_t *iter);
 
 
-
 #endif /* _THREADING_H_ */

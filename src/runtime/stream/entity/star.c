@@ -151,7 +151,6 @@ static void StarBoxTask(snet_entity_t *ent, void *arg)
   while( !terminate) {
     /* read from input stream */
     rec = SNetStreamRead( instream);
-
     switch( SNetRecGetDescriptor( rec)) {
 
       case REC_data:

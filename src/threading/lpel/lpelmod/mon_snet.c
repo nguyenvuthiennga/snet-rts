@@ -22,7 +22,8 @@ static const char end_entry = END_LOG_ENTRY;
 static const char message_trace_sep = MESSAGE_TRACE_SEPARATOR;
 static const char worker_start = WORKER_START_EVENT;
 static const char worker_end = WORKER_END_EVENT;
-static const char worker_wait = WORKER_WAIT_EVENT;
+static const char worker_tsk_req = WORKER_TASK_REQUEST_EVENT;
+static const char worker_tsk_ass = WORKER_TASK_ASSIGN_EVENT;
 
 #define MON_USREVT_BUFSIZE_DELTA 64
 
@@ -34,13 +35,11 @@ typedef struct mon_usrevt_t mon_usrevt_t;
  * the log-file handle contains wait-times (idle-time)
  */
 struct mon_worker_t {
-	int           wid;         /** worker id */
-	FILE         *outfile;     /** where to write the monitoring data to */
-	unsigned int  disp;        /** count how often a task has been dispatched */
-	lpel_timing_t      wait_current;
-	unsigned int wait_cnt;
-	lpel_timing_t wait_time;
-	lpel_timing_t exec_time;
+	int           		wid;         /** worker id */
+	FILE         			*outfile;     /** where to write the monitoring data to */
+	unsigned int  		disp;        /** count how often a task has been dispatched */
+	lpel_timing_t     wait_current;
+	lpel_timing_t 		wait_time;
 	struct {
 		int cnt, size;
 		mon_usrevt_t *buffer;
@@ -378,7 +377,6 @@ static mon_worker_t *MonCbWorkerCreate( int wid)
 	LpelTimingZero(&mon->wait_current);
 
 	/* statistic info */
-	mon->wait_cnt = 0;
 	LpelTimingZero(&mon->wait_time);
 
 	/* user events */
@@ -451,9 +449,7 @@ static mon_worker_t *MonCbWrapperCreate( mon_task_t *mt)
 
 
 static void printStatistic(mon_worker_t *mon){
-	fprintf(mon->outfile, "WC%dWT", mon->wait_cnt);
 	PrintTiming( &mon->wait_time, mon->outfile);
-
 }
 /**
  * Destroy a monitoring context
@@ -491,49 +487,35 @@ static void MonCbWorkerDestroy( mon_worker_t *mon)
 	free( mon);
 }
 
-
-
-
-static void MonCbWorkerWaitStart( mon_worker_t *mon)
-{
-	LpelTimingStart(&mon->wait_current);
+static void MonCbWorkerTskReq( mon_worker_t *mon) {
 	if (FLAG_LOAD(mon))
-		mon->wait_cnt++;		// cheaper than without conditional check?
-}
-
-
-static void MonCbWorkerWaitStop(mon_worker_t *mon)
-{
-	if (FLAG_WORKER(mon) || FLAG_LOAD(mon)) {
-		LpelTimingEnd(&mon->wait_current);
-	}
-
+			  LpelTimingStart(&mon->wait_current);
 
 	if (FLAG_WORKER(mon)) {
-		if (FLAG_TIMES(mon)) {
+			/* write message */
 			lpel_timing_t tnow;
-			LpelTimingNow(&tnow);
-			PrintNormTS(&tnow, mon->outfile);
-		}
-
-
-		// waiting time in second
-		//		  fprintf(mon->outfile, "%c %lu.%09lu %c", worker_wait,
-		//				(unsigned long) mon->wait_current.tv_sec, (unsigned long)mon->wait_current.tv_nsec, end_entry
-		//		);
-
-
-		/* waiting time in nanosecond */
-		fprintf( mon->outfile, "%c", worker_wait);
-		PrintTiming( &mon->wait_current, mon->outfile);
-		fprintf( mon->outfile, "%c", end_entry);
+			LpelTimingNow( &tnow);
+			if (FLAG_TIMES(mon))
+					PrintNormTS( &tnow, mon->outfile);
+			fprintf( mon->outfile, "%c%c", worker_tsk_req, end_entry);
 	}
-
-	if (FLAG_LOAD(mon))
-		LpelTimingAdd(&mon->wait_time, &mon->wait_current);
-
 }
 
+static void MonCbWorkerTskAss( mon_worker_t *mon) {
+	if (FLAG_WORKER(mon)) {
+			/* write message */
+			lpel_timing_t tnow;
+			LpelTimingNow( &tnow);
+			if (FLAG_TIMES(mon))
+					PrintNormTS( &tnow, mon->outfile);
+			fprintf( mon->outfile, "%c%c", worker_tsk_ass, end_entry);
+	}
+
+	if (FLAG_LOAD(mon)) {
+		  LpelTimingEnd(&mon->wait_current);
+			LpelTimingAdd(&mon->wait_time, &mon->wait_current);
+	}
+}
 
 
 
@@ -552,7 +534,7 @@ static void MonCbTaskDestroy(mon_task_t *mt)
 static void MonCbTaskAssign(mon_task_t *mt, mon_worker_t *mw)
 {
 	assert( mt != NULL );
-	assert( mt->mw == NULL );
+	//assert( mt->mw == NULL );
 	mt->mw = mw;
 }
 
@@ -799,8 +781,8 @@ void SNetThreadingMonInit(lpel_monitoring_cb_t *cb, int node, int flag)
 		cb->worker_create         = MonCbWorkerCreate;
 		cb->worker_create_wrapper = MonCbWrapperCreate;
 		cb->worker_destroy        = MonCbWorkerDestroy;
-		cb->worker_waitstart      = MonCbWorkerWaitStart;
-		cb->worker_waitstop       = MonCbWorkerWaitStop;
+		cb->worker_tskreq					= MonCbWorkerTskReq;
+		cb->worker_tskass					= MonCbWorkerTskAss;
 	}
 
 	if (mon_flags & SNET_MON_TASK) {
