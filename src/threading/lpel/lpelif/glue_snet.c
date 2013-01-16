@@ -30,11 +30,6 @@ static int num_others = 0;
 static FILE *mapfile = NULL;
 static int mon_flags = 0;
 
-/**
- * use the Distributed S-Net placement operators for worker placement
- */
-static bool dloc_placement = false;
-
 
 static size_t GetStacksize(snet_entity_descr_t descr)
 {
@@ -95,15 +90,12 @@ int SNetThreadingInit(int argc, char **argv)
 		} else if(strcmp(argv[i], "-excl") == 0 ) {
 			/* Assign realtime priority to workers*/
 			config.flags |= LPEL_FLAG_EXCLUSIVE;
-		} else if(strcmp(argv[i], "-dloc") == 0 ) {
-			/* Use distributed s-net location placement */
-			dloc_placement = true;
 		} else if(strcmp(argv[i], "-wo") == 0 && i + 1 <= argc) {
 			/* Number of cores for others */
 			i = i + 1;
 			num_others = atoi(argv[i]);
 		} else if(strcmp(argv[i], "-w") == 0 && i + 1 <= argc) {
-			/* Number of workers */
+			/* Number core for workers */
 			i = i + 1;
 			num_workers = atoi(argv[i]);
 		}
@@ -144,23 +136,17 @@ int SNetThreadingInit(int argc, char **argv)
 	}
 
 	if (num_workers == 0) {
-		config.proc_workers = num_cpus;
-		//config.num_workers = num_cpus + 1;
-		config.num_workers = num_cpus;
+		config.proc_workers = num_cpus; // including master
 		config.proc_others = num_others;
 	} else {
-		config.proc_workers = num_cpus;
-		config.num_workers = num_workers;
+		config.proc_workers = num_workers;
 		config.proc_others = num_others;
 	}
-	num_workers = config.num_workers;
 
 #ifdef USE_LOGGING
 	/* initialise monitoring module */
 	SNetThreadingMonInit(&config.mon, SNetDistribGetNodeId(), mon_flags);
 #endif
-
-	SNetAssignInit(config.num_workers);
 
 	res = LpelInit(&config);
 	if (res != LPEL_ERR_SUCCESS) {
