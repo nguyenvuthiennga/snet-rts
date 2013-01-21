@@ -297,6 +297,16 @@ void SNetStreamWrite(snet_stream_desc_t *sd, void *item);
 int SNetStreamTryWrite(snet_stream_desc_t *sd, void *item);
 
 
+/**
+ * Return the stream id
+ * 	Used only for debugging in LPEL
+ * 	For pthread, always return -1;
+ *
+ * @param sd  stream descriptor
+ *
+ * @return -1 if sd is NULL or stream is NULL
+ */
+int SNetStreamGetId(snet_stream_desc_t *sd);
 
 
 /**

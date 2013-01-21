@@ -411,12 +411,12 @@ static mon_worker_t *MonCbWrapperCreate( mon_task_t *mt)
 
 	/* build filename */
 	memset(fname, 0, MON_FNAME_MAXLEN+1);
-	if (strlen(mt->name)>0) {
+	if (mt->tid < 0) {
 		snprintf( fname, MON_FNAME_MAXLEN,
 				"%sn%02d_%s%s", prefix, mon_node, mt->name, suffix);
 	} else {
 		snprintf( fname, MON_FNAME_MAXLEN,
-				"%swrapper%02lu%s", prefix, mt->tid, suffix);
+				"%sn%02lu_%s_%d%s", prefix, mon_node, mt->name, mt->tid, suffix);
 	}
 
 	/* open logfile */
