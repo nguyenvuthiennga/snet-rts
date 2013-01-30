@@ -201,4 +201,3 @@ void SNetStreamIterRemove(snet_stream_iter_t * iter)
 {
   LpelStreamIterRemove((lpel_stream_iter_t *) iter);
 }
-
