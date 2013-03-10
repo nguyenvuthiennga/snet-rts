@@ -87,6 +87,7 @@ int SNetThreadingInit(int argc, char **argv)
 	memset(&config, 0, sizeof(lpel_config_t));
 
 	char fname[20+1];
+	int priorf = 1;
 
 	config.flags = LPEL_FLAG_NONE | LPEL_FLAG_PINNED;		// pinned by default
 
@@ -118,9 +119,13 @@ int SNetThreadingInit(int argc, char **argv)
 			using_sosi = true;
 			i = i + 1;
 			cpu_sosi = atoi(argv[i]);
+		}else if(strcmp(argv[i], "-pf") == 0 && i + 1 <= argc) {
+			i = i + 1;
+			priorf = atoi(argv[i]);
 		}
 	}
 
+	LpelTaskSetPriorFunc(priorf);
 
 #ifdef USE_LOGGING
 	if (mon_elts != NULL) {
