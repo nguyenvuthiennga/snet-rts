@@ -30,7 +30,7 @@ static int cpu_workers = 0;
 
 static FILE *mapfile = NULL;
 static int mon_flags = 0;
-
+static int rec_lim = 20;
 
 
 /**
@@ -122,6 +122,9 @@ int SNetThreadingInit(int argc, char **argv)
 		}else if(strcmp(argv[i], "-pf") == 0 && i + 1 <= argc) {
 			i = i + 1;
 			priorf = atoi(argv[i]);
+		}else if(strcmp(argv[i], "-rl") == 0 && i + 1 <= argc) {
+			i = i + 1;
+			rec_lim = atoi(argv[i]);
 		}
 	}
 
@@ -245,6 +248,7 @@ void SNetThreadingEventSignal(snet_entity_t *ent, snet_moninfo_t *moninfo)
  * Spawn a new task
  ****************************************************************************/
 static void setTaskRecLimit(snet_entity_descr_t type, lpel_task_t *t){
+	/*
 	int limit;
 	switch(type) {
 	case ENTITY_box:
@@ -265,8 +269,8 @@ static void setTaskRecLimit(snet_entity_descr_t type, lpel_task_t *t){
 	default:
 		limit = OTHER_REC_LIMIT;
 		break;
-	}
-	LpelTaskSetRecLimit(t, limit);
+	}*/
+	LpelTaskSetRecLimit(t, rec_lim);
 }
 
 
