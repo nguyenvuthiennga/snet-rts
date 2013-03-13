@@ -270,7 +270,19 @@ static void setTaskRecLimit(snet_entity_descr_t type, lpel_task_t *t){
 		limit = OTHER_REC_LIMIT;
 		break;
 	}*/
-	LpelTaskSetRecLimit(t, rec_lim);
+
+	int limit;
+	switch(type) {
+	case ENTITY_sync:
+	case ENTITY_nameshift:
+	case ENTITY_other:
+		limit = OTHER_REC_LIMIT;
+		break;
+	default:
+		limit = rec_lim;
+		break;
+	}
+	LpelTaskSetRecLimit(t, limit);
 }
 
 
@@ -291,14 +303,13 @@ int SNetThreadingSpawn(snet_entity_t *ent)
 	const char *name = SNetEntityName(ent);
 
 	if (using_sosi) {
-		if (location > 0)
+		if (location > 0 && location != LPEL_ENTRY_TASK && location != LPEL_EXIT_TASK)
 			map = LPEL_MAP_SOSI;
 		else if (type != ENTITY_other)
 			map = LPEL_MAP_MASTER;
 	} else if ( type != ENTITY_other) {
 		map = LPEL_MAP_MASTER;
 	}
-
 
 	lpel_task_t *t = LpelTaskCreate(
 			map,
@@ -308,7 +319,14 @@ int SNetThreadingSpawn(snet_entity_t *ent)
 			GetStacksize(type)
 	);
 
-	if (!using_sosi)
+	/*FIXME: for testing */
+	if (location == LPEL_ENTRY_TASK || location == LPEL_EXIT_TASK)
+		LpelTaskSetType(t, location);
+	else
+		LpelTaskSetType(t, -1);
+
+
+	if (map != LPEL_MAP_SOSI)
 		setTaskRecLimit(type, t);	 /** set limit number of records a task can process in once (not for source/sink)*/
 
 #ifdef USE_LOGGING
