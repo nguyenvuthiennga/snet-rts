@@ -781,8 +781,8 @@ void SNetThreadingMonInit(lpel_monitoring_cb_t *cb, int node, int flag)
 		cb->worker_create         = MonCbWorkerCreate;
 		cb->worker_create_wrapper = MonCbWrapperCreate;
 		cb->worker_destroy        = MonCbWorkerDestroy;
-		cb->worker_tskreq					= MonCbWorkerTskReq;
-		cb->worker_tskass					= MonCbWorkerTskAss;
+		cb->worker_waitstart					= MonCbWorkerTskReq;
+		cb->worker_waitstop					= MonCbWorkerTskAss;
 	}
 
 	if (mon_flags & SNET_MON_TASK) {

@@ -3,7 +3,6 @@
 #include <string.h>
 #include <assert.h>
 #include "glue_snet.h"
-
 #include "debug.h"
 
 /* S-Net threading backend interface */
@@ -24,12 +23,17 @@
 
 static int num_cpus = 0;
 static int num_workers = 0;
-static int cpu_others = 0;
+static int cpu_wrapper = 0;
 static int cpu_sosi = 0;
 static int cpu_workers = 0;
 
 static FILE *mapfile = NULL;
 static int mon_flags = 0;
+
+/*
+ *  scheduling cycle = number of records to written in one task execution
+ *  Default = 20 (equals to buffer size in old lpel)
+ */
 static int rec_lim = 20;
 
 
@@ -37,6 +41,8 @@ static int rec_lim = 20;
  * support source/sink
  */
 static bool using_sosi = false;
+
+static bool sep_wrapper = false;
 
 
 static size_t GetStacksize(snet_entity_descr_t descr)
@@ -87,7 +93,7 @@ int SNetThreadingInit(int argc, char **argv)
 	memset(&config, 0, sizeof(lpel_config_t));
 
 	char fname[20+1];
-	int priorf = 1;
+	int priorf = 4;
 
 	config.flags = LPEL_FLAG_NONE | LPEL_FLAG_PINNED;		// pinned by default
 
@@ -101,10 +107,11 @@ int SNetThreadingInit(int argc, char **argv)
 		} else if(strcmp(argv[i], "-excl") == 0 ) {
 			/* Assign realtime priority to workers*/
 			config.flags |= LPEL_FLAG_EXCLUSIVE;
-		} else if(strcmp(argv[i], "-co") == 0 && i + 1 <= argc) {
+		} else if(strcmp(argv[i], "-cwp") == 0 && i + 1 <= argc) {
 			/* Number of cores for others */
 			i = i + 1;
-			cpu_others = atoi(argv[i]);
+			cpu_wrapper = atoi(argv[i]);
+			sep_wrapper = true;
 		} else if(strcmp(argv[i], "-w") == 0 && i + 1 <= argc) {
 			/* Number of workers */
 			i = i + 1;
@@ -164,16 +171,16 @@ int SNetThreadingInit(int argc, char **argv)
 	}
 
 	if (num_workers == 0) {
-		config.num_workers = num_cpus - cpu_others - cpu_sosi; // including master
+		config.num_workers = num_cpus - cpu_wrapper - cpu_sosi; // including master
 	} else {
 		config.num_workers = num_workers;
 	}
 	if (cpu_workers == 0)
-		config.proc_workers = num_cpus - cpu_others - cpu_sosi;
+		config.proc_workers = num_cpus - cpu_wrapper - cpu_sosi;
 	else
 		config.proc_workers = cpu_workers;
 
-	config.proc_others = cpu_others;
+	config.proc_wrapper = cpu_wrapper;
 	config.proc_sosi = cpu_sosi;
 
 #ifdef USE_LOGGING
@@ -247,42 +254,11 @@ void SNetThreadingEventSignal(snet_entity_t *ent, snet_moninfo_t *moninfo)
 /*****************************************************************************
  * Spawn a new task
  ****************************************************************************/
+/*
+ * TODO: extend to have dynamic record limit/scheduling cycle
+ */
 static void setTaskRecLimit(snet_entity_descr_t type, lpel_task_t *t){
-	/*
-	int limit;
-	switch(type) {
-	case ENTITY_box:
-		limit = BOX_REC_LIMIT;
-		break;
-	case ENTITY_parallel:
-		limit = PARALLEL_REC_LIMIT;
-		break;
-	case ENTITY_star:
-		limit = STAR_REC_LIMIT;
-		break;
-	case ENTITY_split:
-		limit = SPLIT_REC_LIMIT;
-		break;
-	case ENTITY_filter:
-		limit = FILTER_REC_LIMIT;
-		break;
-	default:
-		limit = OTHER_REC_LIMIT;
-		break;
-	}*/
-
-	int limit;
-	switch(type) {
-	case ENTITY_sync:
-	case ENTITY_nameshift:
-	case ENTITY_other:
-		limit = OTHER_REC_LIMIT;
-		break;
-	default:
-		limit = rec_lim;
-		break;
-	}
-	LpelTaskSetRecLimit(t, limit);
+	LpelTaskSetRecLimit(t, rec_lim);
 }
 
 
@@ -297,19 +273,21 @@ int SNetThreadingSpawn(snet_entity_t *ent)
   )
  */
 {
-	int map = LPEL_MAP_OTHERS;
+	int map = LPEL_MAP_MASTER;
 	snet_entity_descr_t type = SNetEntityDescr(ent);
-	int location = SNetEntityNode(ent);
+	//int location = SNetEntityNode(ent);
 	const char *name = SNetEntityName(ent);
 
 	if (using_sosi) {
-		if (location > 0 && location != LPEL_ENTRY_TASK && location != LPEL_EXIT_TASK)
-			map = LPEL_MAP_SOSI;
-		else if (type != ENTITY_other)
-			map = LPEL_MAP_MASTER;
-	} else if ( type != ENTITY_other) {
-		map = LPEL_MAP_MASTER;
+		if (strstr(name, SOURCE_BOX_ENTITY) == name)	// if SOURCE_BOX_ENTITY is prefix of name
+			map = LPEL_MAP_SOURCE;
+		if (strstr(name, SINK_BOX_ENTITY) == name)	// if SINK_BOX_ENTITY is prefix of name
+			map = LPEL_MAP_SINK;
 	}
+
+	/* wrapper task is mapped to separate thread only in exclusive mode */
+	if (sep_wrapper && type == ENTITY_other)
+		map = LPEL_MAP_WRAPPER;
 
 	lpel_task_t *t = LpelTaskCreate(
 			map,
@@ -319,15 +297,11 @@ int SNetThreadingSpawn(snet_entity_t *ent)
 			GetStacksize(type)
 	);
 
-	/*FIXME: for testing */
-	if (location == LPEL_ENTRY_TASK || location == LPEL_EXIT_TASK)
-		LpelTaskSetType(t, location);
-	else
-		LpelTaskSetType(t, -1);
-
-
-	if (map != LPEL_MAP_SOSI)
-		setTaskRecLimit(type, t);	 /** set limit number of records a task can process in once (not for source/sink)*/
+	/** set limit number of records a task can process in once
+	 * apply for only tasks controlled by the master
+	 */
+	if (map == LPEL_MAP_MASTER)
+		setTaskRecLimit(type, t);
 
 #ifdef USE_LOGGING
 	if (mon_flags & SNET_MON_TASK){
@@ -341,22 +315,14 @@ int SNetThreadingSpawn(snet_entity_t *ent)
 
 	if ((mon_flags & SNET_MON_MAP) && mapfile) {
 		int tid = LpelTaskGetId(t);
-		// FIXME: change to binary format
 		(void) fprintf(mapfile, "%d%s%c", tid, SNetEntityStr(ent), END_LOG_ENTRY);
 	}
 
 
 #endif
 
-//	if (type != ENTITY_box && type != ENTITY_fbbuf) {
-//		LpelTaskPrio(t, 1);
-//	}
 
-
-	//FIXME only for debugging purposes
-	//fflush(mapfile);
-
-	LpelTaskRun(t);
+	LpelTaskStart(t);
 	return 0;
 }
 
