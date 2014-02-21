@@ -1,5 +1,5 @@
 #include <pthread.h>
-
+#include <string.h>
 #include "distribcommon.h"
 #include "imanager.h"
 #include "info.h"
@@ -13,6 +13,7 @@ static snet_info_tag_t prevDest;
 static snet_info_tag_t infoCounter;
 static pthread_cond_t exitCond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t exitMutex = PTHREAD_MUTEX_INITIALIZER;
+
 
 void SNetDistribInit(int argc, char **argv, snet_info_t *info)
 {
@@ -104,6 +105,9 @@ void SNetRouteNewDynamic(snet_dest_t dest)
   SNetLocvecSet(info, SNetLocvecCreate());
 
   SNetRouteDynamicEnter(info, dest.dynamicIndex, dest.dynamicLoc, NULL);
+
+  //TODO may not need to update loc here
+
   SNetRouteUpdate(info, fun(NULL, info, dest.dynamicLoc), dest.parentNode);
   SNetRouteDynamicExit(info, dest.dynamicIndex, dest.dynamicLoc, NULL);
 

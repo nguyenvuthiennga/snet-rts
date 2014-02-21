@@ -5,6 +5,7 @@
 
 #include "memfun.h"
 #include "locvec.h"
+#include "bool.h"
 
 #include "entities.h"
 
@@ -189,7 +190,7 @@ const char *SNetEntityStr(snet_entity_t *ent)
       while(1) {
         int space = size-(namelen+2);
         buf = SNetMemAlloc(size * sizeof(char));
-        len = SNetLocvecPrint(buf, space, ENT(ent,locvec));
+        len = SNetLocvecPrint(buf, space, ENT(ent,locvec), false);
         if (len>=space) {
           size *= 2;
           SNetMemFree(buf);

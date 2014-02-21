@@ -43,6 +43,7 @@ pkginclude_HEADERS = \
 	include/list-template.c \
 	include/list.h \
 	include/locvec.h \
+	include/locvecmap.h \
 	include/map-template.h \
 	include/map-template.c \
 	include/map.h \
@@ -77,6 +78,9 @@ libruntimestream_la_SOURCES = \
 	src/runtime/common/moninfo.c \
 	src/runtime/common/record.c \
 	src/runtime/common/variant.c \
+	src/runtime/common/lochash.c \
+	src/runtime/common/lochash.h \
+	src/runtime/common/locvecmap.c \
 	src/runtime/stream/utils/bitmap.c \
 	src/runtime/stream/utils/bitmap.h \
 	src/runtime/stream/utils/debug.c \

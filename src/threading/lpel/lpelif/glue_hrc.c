@@ -8,6 +8,7 @@
 #include "hrc_lpel.h"
 #include <lpel/monitor.h>
 #include "debug.h"
+#include "locvecmap.h"
 
 /* provisional assignment module */
 #include "assign.h"
@@ -53,6 +54,10 @@ int comparePrio(void *p1, void *p2) {
 
 int SNetThreadingInit(int argc, char **argv)
 {
+	/* init map from file */
+		SNetLocvecMapInit(argc, argv);
+
+
 #ifdef USE_LOGGING
 	char *mon_elts = NULL;
 #endif

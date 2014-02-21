@@ -18,4 +18,4 @@ net star ({<T>,<S>} -> ...)
   net run
   connect op * {<T>} if <T==10>;
 
-} connect run@2;
+} connect run@0;

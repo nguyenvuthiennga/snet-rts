@@ -357,12 +357,13 @@ void SNetLocvecResetBorder(snet_locvec_t *vec) {
  * @param sbuf  string buffer
  * @param size  maximal allowed size to be printed
  * @param vec   the locvec to be printed
+ * @parem negative include negative number as well
  * @return  the number of characters that were printed, or, that would have
  *          been printed if they didn't exceed the size
  * @pre sbuf is a char buffer large enough to hold the printed
  *      locvec, >= size
  */
-int SNetLocvecPrint(char *sbuf, int size, snet_locvec_t *vec)
+int SNetLocvecPrint(char *sbuf, int size, snet_locvec_t *vec, bool negative)
 {
   int i, ret, cnt;
   /* the decimal number representable by 64 bits is at most 20 digits long*/
@@ -376,7 +377,7 @@ int SNetLocvecPrint(char *sbuf, int size, snet_locvec_t *vec)
     snet_locitem_t *item = &vec->arr[i];
     snet_loctype_t type = item->type;
     int num = item->num;
-    if (num >= 0) {
+    if (num >= 0 || negative) {
       ret = sprintf(itembuf, ":%c%d", (char)type, num);
     } else {
       ret = sprintf(itembuf, ":%c", (char)type);

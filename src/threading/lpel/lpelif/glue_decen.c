@@ -7,6 +7,7 @@
 #include <lpel.h>
 #include <lpel/monitor.h>
 #include "debug.h"
+#include "locvecmap.h"
 
 /* provisional assignment module */
 #include "assign.h"
@@ -36,6 +37,10 @@ static bool sosi_placement = false;
 
 int SNetThreadingInit(int argc, char **argv)
 {
+	/* init map from file */
+	SNetLocvecMapInit(argc, argv);
+
+
 #ifdef USE_LOGGING
 	char *mon_elts = NULL;
 #endif

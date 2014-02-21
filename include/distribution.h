@@ -8,6 +8,7 @@ typedef struct snet_ref snet_ref_t;
 #include "info.h"
 #include "stream.h"
 #include "bool.h"
+#include "locvec.h"
 
 /* The root node in distributed S-Net. */
 #define ROOT_LOCATION           0
@@ -41,4 +42,5 @@ bool SNetDistribIsDistributed(void);
 
 void SNetDistribPack(void *src, ...);
 void SNetDistribUnpack(void *dst, ...);
+
 #endif /* _SNET_DISTRIBUTION_H_ */

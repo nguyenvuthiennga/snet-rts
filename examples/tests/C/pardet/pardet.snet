@@ -8,4 +8,5 @@
 net pardet {
   box dec((A) -> (A));
   box inc((B) -> (B));
-} connect (dec || inc);
+} connect ((dec..dec) || (inc .. inc) || ([ {<T>} -> {<T = T+1>} ] .. [ {<T>} -> {<T = T>, <X = T * 2>} ] ));
+

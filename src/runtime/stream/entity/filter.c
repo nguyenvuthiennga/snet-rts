@@ -16,6 +16,7 @@
 #include "distribution.h"
 
 #include "threading.h"
+#include "locvecmap.h"
 
 /*****************************************************************************/
 /* FILTER INSTRUCTIONS                                                       */
@@ -370,6 +371,9 @@ static snet_stream_t* CreateFilter( snet_stream_t *instream,
 {
   snet_stream_t *outstream;
   filter_arg_t *farg;
+
+  /* update for location if specified map file is used */
+  SNetLocvecGetMap(SNetLocvecGet(info), &location);
 
   /* Check for bypass
    * - if it is a bypass, exit out early and do not create any component

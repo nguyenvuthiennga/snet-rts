@@ -9,7 +9,7 @@
 #include "debug.h"
 
 #include "threading.h"
-
+#include "locvecmap.h"
 
 //#define DEBUG_PRINT_GC
 
@@ -411,6 +411,9 @@ snet_stream_t *CollectorCreateStatic( int num, snet_stream_t **instreams, int lo
   snet_stream_t *outstream;
   coll_arg_t *carg;
   int i;
+
+  /* update for location if specified map file is used */
+  SNetLocvecGetMap(SNetLocvecGet(info), &location);
 
   assert(num >= 1);
   /* create outstream */

@@ -301,6 +301,9 @@ snet_stream_t *SNetSync( snet_stream_t *input,
 
   locvec = SNetLocvecGet(info);
 
+  /* TODO update for location if specified map file is used
+  SNetDistribGetLoc(locvec, &location);*/
+
   input = SNetRouteUpdate(info, input, location);
   if(SNetDistribIsNodeLocation(location)) {
     output = SNetStreamCreate(0);

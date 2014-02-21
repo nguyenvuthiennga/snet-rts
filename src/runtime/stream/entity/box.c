@@ -12,6 +12,8 @@
 #include "handle_p.h"
 #include "list.h"
 #include "distribution.h"
+#include "locvec.h"
+#include "locvecmap.h"
 
 #ifdef SNET_DEBUG_COUNTERS
 #include "debugcounters.h"
@@ -180,6 +182,9 @@ snet_stream_t *SNetBox(snet_stream_t *input,
   snet_stream_t *output;
   box_arg_t *barg;
   snet_variant_list_t *vlist;
+
+  /* update for location if specified map file is used */
+  SNetLocvecGetMap(SNetLocvecGet(info), &location);
 
   input = SNetRouteUpdate(info, input, location);
 

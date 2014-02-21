@@ -34,6 +34,7 @@
 #include "distribution.h"
 #include "threading.h"
 #include "limits.h"
+#include "locvecmap.h"
 
 //#define DEBUG_PRINT_GC
 
@@ -499,6 +500,9 @@ static snet_stream_t *CreateParallel( snet_stream_t *instream,
 
   locvec = SNetLocvecGet(info);
   SNetLocvecParallelEnter(locvec);
+
+  /* update for location if specified map file is used */
+  SNetLocvecGetMap(locvec, &location);
 
   instream = SNetRouteUpdate(info, instream, location);
   if(SNetDistribIsNodeLocation(location)) {

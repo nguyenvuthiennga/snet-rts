@@ -74,6 +74,7 @@ static snet_stream_t *SNetSerialStarchild(snet_stream_t *input,
   /* create operand A */
   SNetRouteDynamicEnter(info, SNetLocvecTopval(SNetLocvecGet(info)),
                         location, box_a);
+
   internal_stream = (*box_a)(input, info, location);
   internal_stream = SNetRouteUpdate(info, internal_stream, location);
   SNetRouteDynamicExit(info, SNetLocvecTopval(SNetLocvecGet(info)),
