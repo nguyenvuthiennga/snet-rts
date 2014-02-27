@@ -68,6 +68,11 @@ void SNetDistribWaitExit(snet_info_t *info)
   SNetMemFree((int*) SNetInfoDelTag(info, infoCounter));
 }
 
+void SNetDestNodeUpdate(snet_info_t *info, int location) {
+	snet_dest_t *dest = (snet_dest_t*) SNetInfoGetTag(info, prevDest);
+	dest->node = location;
+}
+
 snet_stream_t *SNetRouteUpdate(snet_info_t *info, snet_stream_t *in, int loc)
 {
   int *counter = (int*) SNetInfoGetTag(info, infoCounter);

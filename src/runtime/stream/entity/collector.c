@@ -406,7 +406,7 @@ void CollectorTask(snet_entity_t *ent, void *arg)
  * Collector creation function
  * @pre num >= 1
  */
-snet_stream_t *CollectorCreateStatic( int num, snet_stream_t **instreams, int location, snet_info_t *info)
+snet_stream_t *CollectorCreateStatic( int num, snet_stream_t **instreams, snet_info_t **collInfos, int location, snet_info_t *info)
 {
   snet_stream_t *outstream;
   coll_arg_t *carg;
@@ -416,25 +416,34 @@ snet_stream_t *CollectorCreateStatic( int num, snet_stream_t **instreams, int lo
   SNetLocvecGetMap(SNetLocvecGet(info), &location);
 
   assert(num >= 1);
-  /* create outstream */
-  outstream =  SNetStreamCreate(0);
 
-  /* create collector handle */
-  carg = (coll_arg_t *) SNetMemAlloc( sizeof( coll_arg_t));
-  carg->output = outstream;
-  carg->is_static = true;
-  CARG_ST(carg, num) = num;
-  /* copy instreams */
-  CARG_ST(carg, inputs) = SNetMemAlloc(num * sizeof(snet_stream_t *));
-  for(i=0; i<num; i++) {
-    CARG_ST(carg, inputs[i]) = instreams[i];
+  if(SNetDistribIsNodeLocation(location)) {
+  	/* create outstream */
+  	outstream =  SNetStreamCreate(0);
+
+  	/* create collector handle */
+  	carg = (coll_arg_t *) SNetMemAlloc( sizeof( coll_arg_t));
+  	carg->output = outstream;
+  	carg->is_static = true;
+  	CARG_ST(carg, num) = num;
+  	/* copy instreams */
+  	CARG_ST(carg, inputs) = SNetMemAlloc(num * sizeof(snet_stream_t *));
+  	for(i=0; i<num; i++) {
+  		instreams[i]= SNetRouteUpdate(collInfos[i], instreams[i], location);
+  		CARG_ST(carg, inputs[i]) = instreams[i];
+  	}
+
+  	/* spawn collector task */
+  	SNetThreadingSpawn(
+  			SNetEntityCreate( ENTITY_collect, location, SNetLocvecGet(info),
+  					"<collect>", CollectorTask, (void*)carg)
+  	);
+  } else {
+  	for(i=0; i<num; i++)
+  		instreams[i]= SNetRouteUpdate(collInfos[i], instreams[i], location);
+  	outstream = NULL;
   }
-
-  /* spawn collector task */
-  SNetThreadingSpawn(
-      SNetEntityCreate( ENTITY_collect, location, SNetLocvecGet(info),
-        "<collect>", CollectorTask, (void*)carg)
-      );
+  SNetDestNodeUpdate(info, location);
   return outstream;
 }
 

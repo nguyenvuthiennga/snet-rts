@@ -19,6 +19,7 @@ void SNetDistribStart(void);
 void SNetDistribStop(void);
 void SNetDistribWaitExit(snet_info_t *info);
 
+void SNetDestNodeUpdate(snet_info_t *info, int location);
 snet_stream_t *SNetRouteUpdate(snet_info_t *info, snet_stream_t *in, int loc);
 void SNetRouteDynamicEnter(snet_info_t *info, int dynamicIndex, int dynamicLoc,
                            snet_startup_fun_t fun);

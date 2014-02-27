@@ -47,6 +47,8 @@ bool SNetDistribIsRootNode(void) { return true; }
 
 bool SNetDistribIsDistributed(void) { return false; }
 
+void SNetDestNodeUpdate(snet_info_t *info, int location) { }
+
 snet_stream_t *SNetRouteUpdate(snet_info_t *info, snet_stream_t *input, int loc)
 {
   (void) info; /* NOT USED */

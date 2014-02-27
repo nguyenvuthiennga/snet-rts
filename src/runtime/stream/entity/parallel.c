@@ -494,6 +494,7 @@ static snet_stream_t *CreateParallel( snet_stream_t *instream,
   snet_startup_fun_t fun;
   snet_variant_list_t *variants;
   snet_locvec_t *locvec;
+  snet_info_t **collInfos;
   (void) variants; /* NOT USED */
 
   num = SNetVariantListListLength( variant_lists);
@@ -505,9 +506,11 @@ static snet_stream_t *CreateParallel( snet_stream_t *instream,
   SNetLocvecGetMap(locvec, &location);
 
   instream = SNetRouteUpdate(info, instream, location);
+  collstreams = SNetMemAlloc( num * sizeof( snet_stream_t*));
+  collInfos = SNetMemAlloc( num *sizeof( snet_info_t*));
+
   if(SNetDistribIsNodeLocation(location)) {
     transits    = SNetMemAlloc( num * sizeof( snet_stream_t*));
-    collstreams = SNetMemAlloc( num * sizeof( snet_stream_t*));
 
     /* create branches */
     LIST_ENUMERATE(variant_lists, i, variants) {
@@ -516,8 +519,7 @@ static snet_stream_t *CreateParallel( snet_stream_t *instream,
       SNetLocvecParallelNext(locvec);
       fun = funs[i];
       collstreams[i] = (*fun)(transits[i], newInfo, location);
-      collstreams[i] = SNetRouteUpdate(newInfo, collstreams[i], location);
-      SNetInfoDestroy(newInfo);
+      collInfos[i] = newInfo;
     }
 
     SNetLocvecParallelReset(locvec);
@@ -536,30 +538,42 @@ static snet_stream_t *CreateParallel( snet_stream_t *instream,
 
     /* create collector with collstreams */
     SNetLocvecEndBorder(locvec);		// set end border index for collector
-    outstream = CollectorCreateStatic(num, collstreams, location, info);
+    outstream = CollectorCreateStatic(num, collstreams, collInfos, location, info);
     SNetLocvecResetBorder(locvec);
 
-    /* free collstreams array */
-    SNetMemFree(collstreams);
-
-
   } else {
+  	snet_stream_t *org = instream;
     LIST_ENUMERATE(variant_lists, i, variants) {
       snet_info_t *newInfo = SNetInfoCopy(info);
       SNetLocvecParallelNext(locvec);
       fun = funs[i];
       instream = (*fun)( instream, newInfo, location);
-      instream = SNetRouteUpdate(newInfo, instream, location);
-      SNetInfoDestroy(newInfo);
+      if (instream == org)
+      	collstreams[i] = NULL;
+      else {
+      	collstreams[i] = instream;
+      	instream = NULL;
+        org = instream;
+      }
+      collInfos[i] = newInfo;
     }
 
-    SNetVariantListListDestroy( variant_lists);
+    /* create collector with collstreams */
+    SNetLocvecEndBorder(locvec);		// set end border index for collector
+    outstream = CollectorCreateStatic(num, collstreams, collInfos, location, info);
+    SNetLocvecResetBorder(locvec);
 
-    outstream = instream;
+    SNetVariantListListDestroy( variant_lists);
   }
 
   SNetLocvecParallelLeave(locvec);
 
+
+  for (i = 0; i < num; i++)
+  	SNetInfoDestroy(collInfos[i]);
+
+  SNetMemFree( collstreams);
+  SNetMemFree( collInfos);
   SNetMemFree( funs);
   return( outstream);
 }
