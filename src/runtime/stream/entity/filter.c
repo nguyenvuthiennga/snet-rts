@@ -496,6 +496,10 @@ snet_stream_t *SNetNameShift( snet_stream_t *instream,
   snet_stream_t *outstream;
   filter_arg_t *farg;
 
+  /* update for location if specified map file is used */
+  snet_locvec_t *locvec = SNetLocvecGet(info);
+  SNetLocvecGetMap(locvec, &location);
+
   instream = SNetRouteUpdate(info, instream, location);
   if(SNetDistribIsNodeLocation(location)) {
     outstream = SNetStreamCreate(0);
