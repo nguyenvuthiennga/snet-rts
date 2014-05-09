@@ -190,7 +190,7 @@ const char *SNetEntityStr(snet_entity_t *ent)
       while(1) {
         int space = size-(namelen+2);
         buf = SNetMemAlloc(size * sizeof(char));
-        len = SNetLocvecPrint(buf, space, ENT(ent,locvec), false);
+        len = SNetLocvecPrint(buf, space, ENT(ent,locvec));
         if (len>=space) {
           size *= 2;
           SNetMemFree(buf);

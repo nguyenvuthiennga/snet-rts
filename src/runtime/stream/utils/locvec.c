@@ -363,7 +363,7 @@ void SNetLocvecResetBorder(snet_locvec_t *vec) {
  * @pre sbuf is a char buffer large enough to hold the printed
  *      locvec, >= size
  */
-int SNetLocvecPrint(char *sbuf, int size, snet_locvec_t *vec, bool negative)
+int SNetLocvecPrint(char *sbuf, int size, snet_locvec_t *vec)
 {
   int i, ret, cnt;
   /* the decimal number representable by 64 bits is at most 20 digits long*/
@@ -377,7 +377,7 @@ int SNetLocvecPrint(char *sbuf, int size, snet_locvec_t *vec, bool negative)
     snet_locitem_t *item = &vec->arr[i];
     snet_loctype_t type = item->type;
     int num = item->num;
-    if (num >= 0 || negative) {
+    if (num >= 0) {
       ret = sprintf(itembuf, ":%c%d", (char)type, num);
     } else {
       ret = sprintf(itembuf, ":%c", (char)type);
@@ -390,6 +390,30 @@ int SNetLocvecPrint(char *sbuf, int size, snet_locvec_t *vec, bool negative)
   return cnt;
 }
 
+int SNetLocvecGetKey(char *sbuf, int size, snet_locvec_t *vec) {
+	 int i, ret, cnt;
+	 if (size <= 0) return 0;
+	 cnt = 0;
+	 sbuf[0] = '\0';
+	 /* the decimal number representable by 64 bits is at most 20 digits long*/
+	 char itembuf[24];
+
+	 for (i=0; i<vec->size; i++) {
+	    snet_locitem_t *item = &vec->arr[i];
+	    snet_loctype_t type = item->type;
+	    int num = item->num;
+	    if (type != LOC_STAR) {
+	    	ret = sprintf(itembuf, ":%c%d", (char)type, num);
+	    } else {			// not take number for star as everything is map at the same place
+	      ret = sprintf(itembuf, ":%c", (char)type);
+	    }
+	    if (cnt+ret < size) {
+	      strcpy( sbuf+cnt, itembuf );
+	    }
+	    cnt += ret;
+	  }
+	 return cnt;
+}
 
 /******************************************************************************
  * Static helper functions

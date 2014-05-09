@@ -10,6 +10,7 @@
 
 #include "threading.h"
 #include "distribution.h"
+#include "locvecmap.h"
 
 
 
@@ -70,6 +71,7 @@ static snet_stream_t *SNetSerialStarchild(snet_stream_t *input,
 
   locvec = SNetLocvecGet(info);
   (void) SNetLocvecStarSpawn(locvec);
+  SNetLocvecGetMap(locvec, &location);
 
   /* create operand A */
   SNetRouteDynamicEnter(info, SNetLocvecTopval(SNetLocvecGet(info)),
@@ -386,10 +388,14 @@ static snet_stream_t *CreateStar( snet_stream_t *input,
   snet_locvec_t *locvec;
 
   locvec = SNetLocvecGet(info);
+
+
   if (!is_incarnate) {
     SNetLocvecStarEnter(locvec);
+    SNetLocvecGetMap(locvec, &location);
     input = SNetRouteUpdate(info, input, location);
   } else {
+  	SNetLocvecGetMap(locvec, &location);
     input = SNetRouteUpdate(info, input, location);
   }
 

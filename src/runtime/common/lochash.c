@@ -29,7 +29,7 @@ struct snet_lochash_t {
 
 snet_lochash_item_t *SNetCreateLochashItem(char *locvec, int loc) {
   snet_lochash_item_t *item = (snet_lochash_item_t *) malloc(sizeof(snet_lochash_item_t));
-  item->locvec = (char *) malloc(sizeof(char) * strlen(locvec));
+  item->locvec = (char *) malloc(sizeof(char) * (strlen(locvec) + 1));
   strcpy(item->locvec, locvec);
   item->loc = loc;
   return item;
@@ -121,8 +121,18 @@ void SNetDeleteLochash(snet_lochash_t **h_tab) {
 
 bool SNetLochashGetLoc(snet_lochash_t *h, snet_locvec_t *locvec, int *result){
 	// get the key string first
-	char *key = (char *) malloc(100 * sizeof(char));
-	SNetLocvecPrint(key, 100, locvec, true);
+	int len = 100;
+	char *key;
+	int cnt;
+	while(1) {
+		key = (char *) malloc(len * sizeof(char));
+		cnt = SNetLocvecGetKey(key, len, locvec);
+		if (cnt < len)
+			break;
+		else
+			len = cnt + 1;
+	}
+
 	int pos = getPosHash(h, key);
 	if (pos < 0)
 		return false;
