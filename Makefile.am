@@ -290,6 +290,8 @@ libdistribmpi_la_SOURCES = \
 	src/distrib/common/tuplelist.h \
 	src/distrib/common/imanager.c \
 	src/distrib/common/imanager.h \
+	src/distrib/common/fetcher.c \
+	src/distrib/common/fetcher.h \
 	src/distrib/common/omanager.c \
 	src/distrib/common/omanager.h \
 	src/distrib/common/reference.c \
@@ -335,6 +337,8 @@ libdistribscc_la_SOURCES = \
 	src/distrib/common/tuplelist.h \
 	src/distrib/common/imanager.c \
 	src/distrib/common/imanager.h \
+	src/distrib/common/fetcher.c \
+	src/distrib/common/fetcher.h \
 	src/distrib/common/omanager.c \
 	src/distrib/common/omanager.h \
 	src/distrib/common/distribcommon.c \
