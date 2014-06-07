@@ -25,6 +25,22 @@ void *SNetMemAlloc( size_t size)
   return ptr;
 }
 
+/*
+ //for LINUX only
+#include <malloc.h>
+#include <assert.h>
+void *SNetMemResize( void *ptr, size_t size)
+{
+  void *nptr = SNetMemAlloc(size);
+  assert(nptr != NULL);
+  size_t old_size = malloc_usable_size(ptr);
+  old_size = (old_size <= size) ? old_size : size;
+  memcpy(nptr, ptr, old_size);
+  free(ptr);
+  return nptr;
+}
+*/
+
 void *SNetMemResize( void *ptr, size_t size)
 {
   if ((ptr = realloc(ptr, size)) == NULL) {
